@@ -40,6 +40,10 @@ RUN find /install -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || t
     find /install -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
     find /install \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true
 
+# Download static unrar binary (removed from Alpine repos since v3.15)
+RUN wget -O /tmp/unrar https://github.com/EDM115/unrar-alpine/releases/latest/download/unrar-musl-static && \
+    chmod +x /tmp/unrar
+
 # -----------------------------------------------------------
 # Stage 2: final — minimal Alpine runtime
 # -----------------------------------------------------------
@@ -49,14 +53,10 @@ ENV HOME="/config" \
     PYTHONUNBUFFERED=1 \
     BAZARR_BIND_ADDRESS=0.0.0.0
 
-# Enable community repo — derive version from the base image's existing repos
-RUN sed -i 's|/main|/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community|' /etc/apk/repositories && apk update
-
 # Runtime dependencies only — no compilers
 RUN apk add --no-cache \
     ffmpeg \
     mediainfo \
-    unrar \
     libxml2 \
     libxslt \
     libffi \
@@ -71,6 +71,9 @@ WORKDIR /app
 
 # Copy pre-built Python packages from build stage
 COPY --from=build /install /usr/local
+
+# Copy static unrar binary
+COPY --from=build /tmp/unrar /usr/local/bin/unrar
 
 # Copy Bazarr application source
 COPY . .
