@@ -1,0 +1,85 @@
+# Dockerfile.bazarr-alpine
+# Minimal Alpine build for Bazarr — multi-stage, runtime deps only
+#
+# Built remotely via GitHub Actions (see .github/workflows/build-bazarr.yml)
+# Then pulled locally:
+#   docker pull ghcr.io/chefcai/bazarr-alpine:latest
+
+# -----------------------------------------------------------
+# Stage 1: build — compile native Python wheels on Alpine
+# -----------------------------------------------------------
+FROM python:3.12-alpine AS build
+
+WORKDIR /build
+
+# Build tools needed for lxml, numpy, and other native extensions
+RUN apk add --no-cache \
+    build-base \
+    cargo \
+    libffi-dev \
+    libxml2-dev \
+    libxslt-dev \
+    musl-dev
+
+# Use LinuxServer's pre-compiled Alpine wheel index where available
+# Falls back to source compilation for anything not cached there
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install \
+    --find-links https://wheel-index.linuxserver.io/alpine-3.21/ \
+    -r requirements.txt
+
+# Also install postgres deps if present (Bazarr supports postgres)
+COPY postgres-requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install \
+    --find-links https://wheel-index.linuxserver.io/alpine-3.21/ \
+    -r postgres-requirements.txt 2>/dev/null || true
+
+# Strip .pyc caches, tests, and docs from installed packages
+RUN find /install -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find /install -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
+    find /install -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
+    find /install \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true
+
+# -----------------------------------------------------------
+# Stage 2: final — minimal Alpine runtime
+# -----------------------------------------------------------
+FROM python:3.12-alpine
+
+ENV HOME="/config" \
+    PYTHONUNBUFFERED=1 \
+    BAZARR_BIND_ADDRESS=0.0.0.0
+
+# Runtime dependencies only — no compilers
+RUN apk add --no-cache \
+    ffmpeg \
+    mediainfo \
+    unrar \
+    libxml2 \
+    libxslt \
+    libffi \
+    libpq \
+    tzdata \
+    tini && \
+    # Create app user matching your PUID/PGID convention
+    addgroup -g 13000 bazarr && \
+    adduser -D -u 13001 -G bazarr bazarr
+
+WORKDIR /app
+
+# Copy pre-built Python packages from build stage
+COPY --from=build /install /usr/local
+
+# Copy Bazarr application source
+COPY . .
+
+# Create config directory and set permissions
+RUN mkdir -p /config && \
+    chown -R bazarr:bazarr /app /config
+
+USER bazarr
+
+EXPOSE 6767
+
+# tini handles PID 1 / signal forwarding
+ENTRYPOINT ["/sbin/tini", "-s", "--"]
+CMD ["python3", "bazarr.py", "--no-update", "--config", "/config"]
