@@ -40,8 +40,9 @@ RUN find /install -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || t
     find /install -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
     find /install \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true
 
-# Download static unrar binary (removed from Alpine repos since v3.15)
-RUN wget -O /tmp/unrar https://github.com/EDM115/unrar-alpine/releases/latest/download/unrar-musl-static && \
+# Download pre-built unrar for Alpine (removed from repos since v3.15 due to licensing)
+# Binary from https://github.com/EDM115/unrar-alpine
+RUN wget -O /tmp/unrar https://github.com/EDM115/unrar-alpine/releases/latest/download/unrar && \
     chmod +x /tmp/unrar
 
 # -----------------------------------------------------------
