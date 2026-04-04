@@ -49,8 +49,8 @@ ENV HOME="/config" \
     PYTHONUNBUFFERED=1 \
     BAZARR_BIND_ADDRESS=0.0.0.0
 
-# Enable community repo (needed for unrar)
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
+# Enable community repo — derive version from the base image's existing repos
+RUN sed -i 's|/main|/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community|' /etc/apk/repositories && apk update
 
 # Runtime dependencies only — no compilers
 RUN apk add --no-cache \
