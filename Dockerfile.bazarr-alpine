@@ -3,7 +3,7 @@
 #
 # Built remotely via GitHub Actions (see .github/workflows/build-bazarr.yml)
 # Then pulled locally:
-#   docker pull ghcr.io/chefcai/bazarr-alpine:latest
+#   docker pull ghcr.io/<your-username>/bazarr-alpine:latest
 
 # -----------------------------------------------------------
 # Stage 1: build — compile native Python wheels on Alpine
@@ -48,6 +48,9 @@ FROM python:3.12-alpine
 ENV HOME="/config" \
     PYTHONUNBUFFERED=1 \
     BAZARR_BIND_ADDRESS=0.0.0.0
+
+# Enable community repo (needed for unrar)
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
 
 # Runtime dependencies only — no compilers
 RUN apk add --no-cache \
