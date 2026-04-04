@@ -1,0 +1,40 @@
+# .dockerignore — keep only runtime files in the final image
+# Cuts ~100MB+ of unnecessary content from COPY . .
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# CI/CD and GitHub
+.github
+
+# Frontend source (built UI is served from bazarr/app/)
+frontend
+
+# Tests and dev tooling
+tests
+dev-setup
+dev-requirements.txt
+
+# Documentation and screenshots
+README.md
+CONTRIBUTING.md
+screenshot
+LICENSE
+
+# Release/changelog tooling
+.auto-changelog
+.release-it.json
+changelog-dev.hbs
+changelog-master.hbs
+
+# IDE
+.idea
+.vscode
+pyrightconfig.json
+
+# Docker files themselves (avoid recursive copy)
+Dockerfile*
+.dockerignore
+docker-compose*
