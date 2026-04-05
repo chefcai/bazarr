@@ -30,7 +30,6 @@ RUN pip install --no-cache-dir --prefix=/install \
     -r postgres-requirements.txt && \
     find /install -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /install -type d \( -name "tests" -o -name "test" -o -name "testing" \) -exec rm -rf {} + 2>/dev/null || true && \
-    find /install \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true && \
     find /install -name "*.pyc" -delete 2>/dev/null || true
 
 # Download pre-built unrar for Alpine (removed from repos since v3.15)
@@ -51,11 +50,9 @@ COPY libs/ ./libs/
 COPY custom_libs/ ./custom_libs/
 COPY migrations/ ./migrations/
 
-# Aggressively strip vendored bloat — this runs in an intermediate stage
-# so deleted bytes never appear in the final image layers
+# Strip vendored bloat — keep .dist-info (needed by importlib.metadata at runtime)
 RUN find /app/libs /app/custom_libs -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /app/libs /app/custom_libs -type d \( -name "tests" -o -name "test" -o -name "testing" \) -exec rm -rf {} + 2>/dev/null || true && \
-    find /app/libs /app/custom_libs \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true && \
     find /app/libs /app/custom_libs -name "*.pyc" -delete 2>/dev/null || true && \
     rm -rf /app/libs/pycountry/locales
 
