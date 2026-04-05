@@ -79,8 +79,12 @@ COPY --from=build /tmp/unrar /usr/local/bin/unrar
 # Copy Bazarr application source
 COPY . .
 
-# Create config directory and set permissions
-RUN mkdir -p /config && \
+# Strip non-runtime bloat from vendored libs/ and create config dir
+RUN find /app/libs /app/custom_libs -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/libs /app/custom_libs -type d \( -name "tests" -o -name "test" \) -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/libs /app/custom_libs \( -name "*.dist-info" -o -name "*.egg-info" \) -exec rm -rf {} + 2>/dev/null || true && \
+    rm -rf /app/libs/pycountry/locales && \
+    mkdir -p /config && \
     chown -R bazarr:bazarr /app /config
 
 USER bazarr
