@@ -43,12 +43,9 @@ FROM alpine:3.21 AS app-prep
 
 WORKDIR /app
 
-# Copy ONLY the directories Bazarr needs at runtime (not the whole repo)
-COPY bazarr.py ./
-COPY bazarr/ ./bazarr/
-COPY libs/ ./libs/
-COPY custom_libs/ ./custom_libs/
-COPY migrations/ ./migrations/
+# Copy entire repo — .dockerignore filters non-runtime files (frontend src, tests, docs, git)
+# Ensures built frontend UI (bazarr/app/) and all runtime dirs are included
+COPY . .
 
 # Strip vendored bloat — keep .dist-info (needed by importlib.metadata at runtime)
 RUN find /app/libs /app/custom_libs -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
